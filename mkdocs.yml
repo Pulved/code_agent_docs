@@ -1,0 +1,17 @@
+site_name: Code_Agent文档
+# 配置左侧导航栏菜单
+nav:
+  - 🏠 项目主页: index.md
+  - 📂 源码深度解析:
+      - 主链路模块 (UI与调度): modules/main-modules.md
+      - RAG 底座引擎 (项目理解): modules/rag-engine.md
+
+# GitHub 仓库配置
+repo_name: 'GitHub'
+repo_url: 'https://github.com/CGCL-codes/naturalcc'
+edit_uri: ''
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
