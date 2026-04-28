@@ -1,17 +1,47 @@
-site_name: Code_Agent文档
-# 配置左侧导航栏菜单
+site_name: NaturalCC Code Agent
+site_description: 面向 C/C++ 工程的上下文增强代码代理
+
+# ==========================================
+# 主题切换区 (取消对应主题的注释即可切换)
+# ==========================================
+
+# 选项 1: Windmill 主题 (极简清爽风)
+theme:
+  name: windmill
+
+# 选项 2: GitBook 主题 (经典电子书风)
+# theme:
+#   name: gitbook
+
+# 选项 3: 留作备用的 Material 主题
+# theme:
+#   name: material
+
+# ==========================================
+# 左侧导航栏配置 (对应我们刚刚拆分的文件)
+# ==========================================
 nav:
   - 🏠 项目主页: index.md
+  - 🚀 环境搭建: setup.md
+  - 📖 使用指南:
+      - Web UI 交互: usage/gui.md
+      - 命令行与 API: usage/cli-and-api.md
+  - 🛠️ 进阶开发:
+      - 插件系统架构 (Plugin): advanced/plugin-system.md
   - 📂 源码深度解析:
       - 主链路模块 (UI与调度): modules/main-modules.md
-      - RAG 底座引擎 (项目理解): modules/rag-engine.md
+      - RAG 底座引擎 (项目理解): modules/rag-engine.md   
+  - English README: readme-en.md     
 
 # GitHub 仓库配置
 repo_name: 'GitHub'
 repo_url: 'https://github.com/CGCL-codes/naturalcc'
 edit_uri: ''
 
+
+# Markdown 扩展 (保留基础支持代码高亮的扩展即可)
 markdown_extensions:
-  - admonition
-  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
   - pymdownx.superfences
+  - tables

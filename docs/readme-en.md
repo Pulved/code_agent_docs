@@ -1,0 +1,327 @@
+# NaturalCC Code Agent
+
+[中文文档](index.md)
+
+`code_agent` is a local code-editing agent that combines static project understanding with Aider-based edits.
+
+It first parses a project to collect functions, variables, types, members, includes, and symbol relations. It then builds a semantic prompt for the requested task and hands that prompt to Aider, which edits the selected target files.
+
+The project supports two user-facing paths:
+
+- Graphical UI: FastAPI backend + React/Vite frontend.
+- CLI: `aider_runner.py`.
+
+The first selected target file is always the primary file used for NaturalCC prompt construction. Aider can still receive and edit multiple target files.
+
+## What It Is
+
+This is not a general chat bot. It is a context-enhanced code agent for project-aware code completion and editing.
+
+Typical tasks:
+
+- complete a function body
+- complete a function signature
+- complete a variable, member, or type
+- make small code changes that should follow existing project style
+- preview the exact semantic prompt before running Aider
+
+Main files:
+
+- `agent_web_api.py`: FastAPI backend and bundled frontend server.
+- `webui/`: React + Vite graphical interface.
+- `aider_runner.py`: CLI entry and Aider command orchestration.
+- `completion_prompt_agent.py`: semantic prompt construction.
+- `rag/c/`: C/C++ parsing and context retrieval.
+- `rag/java/`: Java parsing and prompt path.
+- `test_api.py`: OpenRouter key/connectivity check.
+
+## Environment Setup
+
+### 1. Activate the Python Environment
+
+```bash
+conda activate naturalcc
+```
+
+### 2. Install Python Requirements
+
+The project expects these runtime capabilities:
+
+- `fastapi`
+- `uvicorn`
+- `clang` Python bindings
+- `libclang`
+- `aider` on `PATH`
+
+If the active environment is missing pieces, install them according to your local environment policy. A common setup is:
+
+```bash
+pip install fastapi uvicorn clang aider-chat
+conda install -c conda-forge libclang
+```
+
+For OpenRouter/OpenAI calls, either pass an API key in the UI/CLI or set environment variables:
+
+```bash
+export OPENROUTER_API_KEY=sk-or-v1-...
+export OPENAI_API_KEY=sk-...
+```
+
+### 3. Install Frontend Dependencies
+
+From `code_agent/`:
+
+```bash
+cd webui
+npm install
+```
+
+## Using The Graphical Interface
+
+The UI has a FastAPI backend and a React frontend.
+
+### Quick Start (One-Click)
+
+If you have a graphical terminal emulator installed (gnome-terminal, konsole, alacritty, etc.), or `tmux` as a fallback:
+
+```bash
+./start.sh
+```
+
+This script automatically activates the `naturalcc` environment and opens two terminal windows (or tmux panes):
+- One for the FastAPI backend
+- One for the Vite frontend dev server
+
+When using tmux, the session is named `ncc-agent`. Press `Ctrl+B` then `D` to detach; re-attach with `tmux attach -t ncc-agent`.
+
+### Development Mode
+
+Use this while editing frontend code. It gives Vite hot reload.
+
+Terminal 1:
+
+```bash
+python agent_web_api.py --host 127.0.0.1 --port 7860
+```
+
+Terminal 2:
+
+```bash
+cd webui
+npm run dev
+```
+
+Open:
+
+```text
+http://127.0.0.1:5173/
+```
+
+In development mode, Vite serves the frontend on `5173` and proxies `/api/*` requests to FastAPI on `7860`.
+
+### Bundled Local Mode
+
+Use this when you want one server to serve both the UI and API.
+
+```bash
+cd webui
+npm run build
+cd ..
+python agent_web_api.py --host 127.0.0.1 --port 7860
+```
+
+Open:
+
+```text
+http://127.0.0.1:7860/
+```
+
+In bundled mode, FastAPI serves `webui/dist` and all backend APIs from the same port.
+
+### UI Workflow
+
+1. Set the project root.
+2. Select one or more target files.
+3. Keep the first selected file as the primary parse file.
+4. Choose or type a model.
+5. Optionally enter API key, symbol, completion type, or prefix.
+6. Enter the development instruction.
+7. Click preview to inspect the final prompt, or execute to run Aider.
+
+## Using The CLI
+
+Run commands from `code_agent/`.
+
+### Preview Prompt Only
+
+```bash
+python aider_runner.py \
+  -dir /path/to/project \
+  -f src/foo.c include/foo.h \
+  -i "补全 foo 函数实现" \
+  --preview
+```
+
+### Execute Aider
+
+```bash
+python aider_runner.py \
+  -dir /path/to/project \
+  -f src/foo.c include/foo.h \
+  -i "根据现有风格完善 foo 函数实现" \
+  -m openrouter/deepseek/deepseek-chat
+```
+
+### Useful CLI Options
+
+```bash
+-dir /path/to/project
+-f src/foo.c include/foo.h
+-i "你的修改或补全需求"
+-m openrouter/deepseek/deepseek-chat
+-key sk-...
+-s parse_flags
+-t function_body
+--prefix parse_
+--preview
+```
+
+`-t` accepts:
+
+```text
+member
+variable
+function
+function_body
+type
+```
+
+## API Endpoints
+
+`agent_web_api.py` exposes:
+
+- `GET /api/health`
+- `GET /api/bootstrap`
+- `GET /api/models`
+- `GET|POST /api/workspace/scan`
+- `GET /api/browse`
+- `POST /api/command-preview`
+- `POST /api/prompt/preview`
+- `POST /api/run`
+
+`/api/run` streams newline-delimited JSON events so the frontend can display live Aider logs.
+
+## Feature Plugin System
+
+The **Advanced** panel is now powered by a plugin architecture. Each feature is a `FeaturePlugin` under `plugins/`. The frontend renders forms dynamically from each plugin's `config_schema`, so adding a new capability does **not** require any frontend code changes.
+
+### Architecture
+
+- `plugins/base.py` — `FeaturePlugin` abstract base class, `ExecutionMode` (`aider`/`direct`/`hybrid`), `ConfigField` schema definition, `ExecutionContext`.
+- `plugins/registry.py` — `@register_plugin` class decorator; plugins auto-register on import.
+- `plugins/dispatcher.py` — routes execution to AIDER, DIRECT, or HYBRID mode.
+- `plugins/code_completion.py` — the existing `symbol`/`completion_type`/`prefix` logic, migrated to a plugin.
+
+### Execution Modes
+
+| Mode | Behavior | Example |
+|------|----------|---------|
+| `aider` | Generate prompt → call Aider → modify code files | Code completion |
+| `direct` | Call external API directly → return report / write files | Image-to-HTML |
+| `hybrid` | Analysis via API → generate fix prompt → Aider repair | Vulnerability detection |
+
+### How to Add a New Feature Plugin
+
+1. Create a new file under `plugins/`, e.g. `plugins/my_feature.py`.
+2. Inherit `FeaturePlugin`, implement `metadata`, `config_schema`, and `execute`.
+3. Decorate the class with `@register_plugin`.
+4. Restart the backend. The frontend will automatically show the new feature and render its form.
+
+Example:
+
+```python
+# plugins/my_feature.py
+from typing import Any, Dict, Generator, List, Optional
+from code_agent.plugins.base import (
+    FeaturePlugin, FeatureMetadata, ExecutionMode,
+    ConfigField, ConfigFieldType, ExecutionContext, PluginResult,
+)
+from code_agent.plugins.registry import register_plugin
+
+
+@register_plugin
+class MyFeaturePlugin(FeaturePlugin):
+
+    @property
+    def metadata(self) -> FeatureMetadata:
+        return FeatureMetadata(
+            name="my_feature",           # unique ID
+            label="My Feature",          # display name
+            description="What it does",
+            execution_mode=ExecutionMode.DIRECT,  # or AIDER / HYBRID
+        )
+
+    @property
+    def config_schema(self) -> List[ConfigField]:
+        return [
+            ConfigField(
+                name="my_param",
+                label="My Parameter",
+                type=ConfigFieldType.TEXT,   # text / textarea / select / switch / file
+                required=True,
+                default="",
+                placeholder="Enter value",
+                help_text="This is shown under the field",
+            ),
+        ]
+
+    def execute(self, context: ExecutionContext) -> Generator[str, None, None]:
+        # yield strings for log output
+        yield "Starting...\n"
+        # ... your logic ...
+        # yield PluginResult when done (for DIRECT / HYBRID)
+        yield PluginResult(success=True, message="Done!")
+```
+
+### Config Field Types
+
+| Type | Renders as | Extra properties |
+|------|-----------|-----------------|
+| `text` | `<input type="text">` | `placeholder`, `default` |
+| `textarea` | `<textarea>` | `placeholder`, `default` |
+| `select` | `<select>` | `options: [{value, label}]`, `default` |
+| `switch` | `<input type="checkbox">` | `default` (bool) |
+| `file` | `<input type="file">` | `accept`, `multiple` |
+
+### File Upload
+
+If your plugin config contains a `file` type field, the frontend will automatically send the request as `multipart/form-data`. Uploaded files are available in `context.uploaded_files` as `{field_name: UploadFile}`.
+
+### API Changes for Plugins
+
+`/api/bootstrap` now returns:
+
+```json
+{
+  "features": [{"name": "...", "label": "...", "execution_mode": "..."}],
+  "schemas": {"feature_name": [{"name": "...", "type": "...", ...}]},
+  "default_feature": "code_completion"
+}
+```
+
+`/api/run` accepts both JSON (backward compatible) and `multipart/form-data` (for file uploads). The payload should include:
+
+```json
+{
+  "feature": "my_feature",
+  "feature_config": {"my_param": "value"}
+}
+```
+
+## Notes And Limitations
+
+- C/C++ parsing depends on `libclang`.
+- Some C++ syntax may not parse reliably because parts of the parser still use C-oriented libclang settings.
+- `rag/` includes offline research/evaluation scripts with local-path assumptions.
+- The project currently has smoke checks rather than a formal automated test suite.
+- `test_api.py` checks API connectivity; it is not a parser or UI test.
