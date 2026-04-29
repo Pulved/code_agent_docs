@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>插件系统架构 (Plugin) - NaturalCC Code Agent</title>
+    <link href="../../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/highlight.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../../js/jquery-3.2.1.min.js"></script>
+    <script src="../../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '../..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "Feature Plugin \u7cfb\u7edf", url: "#_top", children: [
+              {title: "\u67b6\u6784", url: "#_1" },
+              {title: "\u6267\u884c\u6a21\u5f0f", url: "#_2" },
+              {title: "\u5982\u4f55\u6dfb\u52a0\u65b0\u529f\u80fd\u63d2\u4ef6", url: "#_3" },
+              {title: "\u914d\u7f6e\u5b57\u6bb5\u7c7b\u578b", url: "#_4" },
+              {title: "\u6587\u4ef6\u4e0a\u4f20", url: "#_5" },
+              {title: "\u63d2\u4ef6\u76f8\u5173\u7684 API \u53d8\u66f4", url: "#api" },
+          ]},
+        ];
+
+    </script>
+    <script src="../../js/base.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../../modules/main-modules/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../../modules/main-modules/" class="btn btn-xs btn-link">
+        主链路模块 (UI与调度)
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../../usage/cli-and-api/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../../usage/cli-and-api/" class="btn btn-xs btn-link">
+        命令行与 API
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <h2 id="feature-plugin">Feature Plugin 系统</h2>
+<p><strong>Advanced</strong> 面板现在由插件架构驱动。每个功能都是 <code>plugins/</code> 下的一个 <code>FeaturePlugin</code>。前端根据每个插件的 <code>config_schema</code> 动态渲染表单，因此添加新功能<strong>不需要</strong>修改任何前端代码。</p>
+<h3 id="_1">架构</h3>
+<ul>
+<li><code>plugins/base.py</code> — <code>FeaturePlugin</code> 抽象基类、<code>ExecutionMode</code>（<code>aider</code>/<code>direct</code>/<code>hybrid</code>）、<code>ConfigField</code> 表单定义、<code>ExecutionContext</code>。</li>
+<li><code>plugins/registry.py</code> — <code>@register_plugin</code> 类装饰器；插件在导入时自动注册。</li>
+<li><code>plugins/dispatcher.py</code> — 将执行路由到 AIDER、DIRECT 或 HYBRID 模式。</li>
+<li><code>plugins/code_completion.py</code> — 原有的 <code>symbol</code>/<code>completion_type</code>/<code>prefix</code> 逻辑，已迁移为插件。</li>
+</ul>
+<h3 id="_2">执行模式</h3>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>行为</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>aider</code></td>
+<td>生成 prompt → 调用 Aider → 修改代码文件</td>
+<td>代码补全</td>
+</tr>
+<tr>
+<td><code>direct</code></td>
+<td>直接调用外部 API → 返回报告 / 写入文件</td>
+<td>图片生成 HTML</td>
+</tr>
+<tr>
+<td><code>hybrid</code></td>
+<td>通过 API 分析 → 生成修复 prompt → Aider 修复</td>
+<td>漏洞检测</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_3">如何添加新功能插件</h3>
+<ol>
+<li>在 <code>plugins/</code> 下创建新文件，例如 <code>plugins/my_feature.py</code>。</li>
+<li>继承 <code>FeaturePlugin</code>，实现 <code>metadata</code>、<code>config_schema</code> 和 <code>execute</code>。</li>
+<li>用 <code>@register_plugin</code> 装饰类。</li>
+<li>重启后端。前端会自动显示新功能并渲染其表单。</li>
+</ol>
+<p>示例：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># plugins/my_feature.py</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">code_agent.plugins.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">FeaturePlugin</span><span class="p">,</span> <span class="n">FeatureMetadata</span><span class="p">,</span> <span class="n">ExecutionMode</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">ConfigField</span><span class="p">,</span> <span class="n">ConfigFieldType</span><span class="p">,</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">PluginResult</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">code_agent.plugins.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_plugin</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nd">@register_plugin</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeaturePlugin</span><span class="p">(</span><span class="n">FeaturePlugin</span><span class="p">):</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureMetadata</span><span class="p">:</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="k">return</span> <span class="n">FeatureMetadata</span><span class="p">(</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_feature&quot;</span><span class="p">,</span>           <span class="c1"># 唯一标识</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;My Feature&quot;</span><span class="p">,</span>          <span class="c1"># 显示名称</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;功能描述&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            <span class="n">execution_mode</span><span class="o">=</span><span class="n">ExecutionMode</span><span class="o">.</span><span class="n">DIRECT</span><span class="p">,</span>  <span class="c1"># 或 AIDER / HYBRID</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="p">)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="nd">@property</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ConfigField</span><span class="p">]:</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            <span class="n">ConfigField</span><span class="p">(</span>
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_param&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;My Parameter&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>                <span class="nb">type</span><span class="o">=</span><span class="n">ConfigFieldType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>   <span class="c1"># text / textarea / select / switch / file</span>
+<a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>                <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>                <span class="n">placeholder</span><span class="o">=</span><span class="s2">&quot;输入值&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>                <span class="n">help_text</span><span class="o">=</span><span class="s2">&quot;显示在字段下方的帮助文本&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>            <span class="p">),</span>
+<a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>        <span class="p">]</span>
+<a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>
+<a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExecutionContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        <span class="c1"># yield 字符串作为日志输出</span>
+<a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>        <span class="k">yield</span> <span class="s2">&quot;开始执行...</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>        <span class="c1"># ... 你的业务逻辑 ...</span>
+<a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>        <span class="c1"># 完成后 yield PluginResult（用于 DIRECT / HYBRID 模式）</span>
+<a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        <span class="k">yield</span> <span class="n">PluginResult</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;完成！&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="_4">配置字段类型</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>渲染为</th>
+<th>额外属性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>&lt;input type="text"&gt;</code></td>
+<td><code>placeholder</code>, <code>default</code></td>
+</tr>
+<tr>
+<td><code>textarea</code></td>
+<td><code>&lt;textarea&gt;</code></td>
+<td><code>placeholder</code>, <code>default</code></td>
+</tr>
+<tr>
+<td><code>select</code></td>
+<td><code>&lt;select&gt;</code></td>
+<td><code>options: [{value, label}]</code>, <code>default</code></td>
+</tr>
+<tr>
+<td><code>switch</code></td>
+<td><code>&lt;input type="checkbox"&gt;</code></td>
+<td><code>default</code> (bool)</td>
+</tr>
+<tr>
+<td><code>file</code></td>
+<td><code>&lt;input type="file"&gt;</code></td>
+<td><code>accept</code>, <code>multiple</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">文件上传</h3>
+<p>如果插件配置包含 <code>file</code> 类型字段，前端会自动以 <code>multipart/form-data</code> 发送请求。上传的文件在 <code>context.uploaded_files</code> 中以 <code>{field_name: UploadFile}</code> 的形式提供。</p>
+<h3 id="api">插件相关的 API 变更</h3>
+<p><code>/api/bootstrap</code> 现在返回：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;execution_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}],</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">&quot;schemas&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;feature_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}]},</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span><span class="nt">&quot;default_feature&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;code_completion&quot;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>/api/run</code> 同时接受 JSON（向后兼容）和 <code>multipart/form-data</code>（用于文件上传）。请求体应包含：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="p">{</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">&quot;feature&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_feature&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">  </span><span class="nt">&quot;feature_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;my_param&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;value&quot;</span><span class="p">}</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="p">}</span>
+</code></pre></div>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../../modules/main-modules/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../../modules/main-modules/" class="btn btn-xs btn-link">
+        主链路模块 (UI与调度)
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../../usage/cli-and-api/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../../usage/cli-and-api/" class="btn btn-xs btn-link">
+        命令行与 API
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+      <p>
+        <a href="https://github.com/CGCL-codes/naturalcc"><i class="fa fa-github"></i>
+GitHub</a>
+      </p>
+  <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>

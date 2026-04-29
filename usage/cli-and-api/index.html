@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>命令行与 API - NaturalCC Code Agent</title>
+    <link href="../../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/highlight.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../../js/jquery-3.2.1.min.js"></script>
+    <script src="../../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '../..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "\u4f7f\u7528 CLI", url: "#_top", children: [
+              {title: "\u4ec5\u9884\u89c8 Prompt", url: "#prompt" },
+              {title: "\u6267\u884c Aider \u4fee\u6539\u6587\u4ef6", url: "#aider" },
+              {title: "\u5e38\u7528 CLI \u53c2\u6570", url: "#cli_1" },
+          ]},
+          {title: "API \u63a5\u53e3", url: "#api", children: [
+          ]},
+        ];
+
+    </script>
+    <script src="../../js/base.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../../advanced/plugin-system/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../../advanced/plugin-system/" class="btn btn-xs btn-link">
+        插件系统架构 (Plugin)
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../gui/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../gui/" class="btn btn-xs btn-link">
+        Web UI 交互
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <h2 id="cli">使用 CLI</h2>
+<p>在 <code>code_agent/</code> 目录下执行命令。</p>
+<h3 id="prompt">仅预览 Prompt</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>-dir<span class="w"> </span>/path/to/project<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>-i<span class="w"> </span><span class="s2">&quot;补全 foo 函数实现&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--preview
+</code></pre></div>
+<h3 id="aider">执行 Aider 修改文件</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>-dir<span class="w"> </span>/path/to/project<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">  </span>-i<span class="w"> </span><span class="s2">&quot;根据现有风格完善 foo 函数实现&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">  </span>-m<span class="w"> </span>openrouter/deepseek/deepseek-chat
+</code></pre></div>
+<h3 id="cli_1">常用 CLI 参数</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>-dir<span class="w"> </span>/path/to/project
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>-i<span class="w"> </span><span class="s2">&quot;你的修改或补全需求&quot;</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>-m<span class="w"> </span>openrouter/deepseek/deepseek-chat
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>-key<span class="w"> </span>sk-...
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>-s<span class="w"> </span>parse_flags
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>-t<span class="w"> </span>function_body
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>--prefix<span class="w"> </span>parse_
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>--preview
+</code></pre></div>
+<p><code>-t</code> 支持：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>member
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>variable
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>function
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>function_body
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>type
+</code></pre></div>
+<h2 id="api">API 接口</h2>
+<p><code>agent_web_api.py</code> 提供：</p>
+<ul>
+<li><code>GET /api/health</code></li>
+<li><code>GET /api/bootstrap</code></li>
+<li><code>GET /api/models</code></li>
+<li><code>GET|POST /api/workspace/scan</code></li>
+<li><code>GET /api/browse</code></li>
+<li><code>POST /api/command-preview</code></li>
+<li><code>POST /api/prompt/preview</code></li>
+<li><code>POST /api/run</code></li>
+</ul>
+<p><code>/api/run</code> 会返回按行分隔的 JSON 事件，前端用它实时显示 Aider 日志。</p>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../../advanced/plugin-system/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../../advanced/plugin-system/" class="btn btn-xs btn-link">
+        插件系统架构 (Plugin)
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../gui/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../gui/" class="btn btn-xs btn-link">
+        Web UI 交互
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+      <p>
+        <a href="https://github.com/CGCL-codes/naturalcc"><i class="fa fa-github"></i>
+GitHub</a>
+      </p>
+  <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>

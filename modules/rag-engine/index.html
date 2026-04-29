@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>RAG 底座引擎 (项目理解) - NaturalCC Code Agent</title>
+    <link href="../../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/highlight.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../../js/jquery-3.2.1.min.js"></script>
+    <script src="../../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '../..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "1. rag/ \u5b50\u76ee\u5f55\u89e3\u8bfb", url: "#_top", children: [
+              {title: "1.1 preprocess.py", url: "#11-preprocesspy" },
+              {title: "1.2 cfile_parse.py", url: "#12-cfile_parsepy" },
+              {title: "1.3 node_prompt.py", url: "#13-node_promptpy" },
+              {title: "1.4 generator.py", url: "#14-generatorpy" },
+              {title: "1.5 tokenizer.py", url: "#15-tokenizerpy" },
+              {title: "1.6 main.py", url: "#16-mainpy" },
+              {title: "1.7 \u8bc4\u6d4b\u811a\u672c", url: "#17" },
+              {title: "1.8 \u5176\u4ed6\u8f85\u52a9/\u5b9e\u9a8c\u6587\u4ef6", url: "#18" },
+          ]},
+        ];
+
+    </script>
+    <script src="../../js/base.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../../readme-en/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../../readme-en/" class="btn btn-xs btn-link">
+        English README
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../main-modules/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../main-modules/" class="btn btn-xs btn-link">
+        主链路模块 (UI与调度)
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <h2 id="1-rag">1. <code>rag/</code> 子目录解读</h2>
+<p><code>rag/</code> 是这个 agent 的“项目理解引擎”。如果不看这里，就只能把它理解成一个 Aider UI；但真正体现 NaturalCC 特征的内容，大都在这一层。</p>
+<h3 id="11-preprocesspy">1.1 <code>preprocess.py</code></h3>
+<p>定义了 <code>CProjectParser</code>，负责：</p>
+<ul>
+<li>遍历项目目录中的 <code>.c/.cpp/.h/.hpp</code> 文件。</li>
+<li>调用 <code>CParser</code> 逐个解析文件。</li>
+<li>汇总成项目级 <code>parse_res</code>。</li>
+<li>初始化 <code>CProjectSearcher</code>。</li>
+<li>清洗符号关系，把一些无效的项目内引用剔除掉。</li>
+</ul>
+<p>这个文件相当于项目级入口，负责把“很多源码文件”变成“可检索的语义图”。</p>
+<h3 id="12-cfile_parsepy">1.2 <code>cfile_parse.py</code></h3>
+<p>这是底层 AST 解析器，依赖 <code>clang.cindex</code> 与 <code>libclang</code>。它做的是最基础但最关键的工作：</p>
+<ul>
+<li>自动尝试寻找 <code>libclang</code> 动态库。</li>
+<li>解析 C 文件 AST。</li>
+<li>提取并存储：</li>
+<li>include</li>
+<li>全局变量</li>
+<li>局部变量</li>
+<li>函数定义/声明</li>
+<li>函数体</li>
+<li>结构体 / 联合体 / 枚举</li>
+<li>typedef</li>
+<li>docstring / 注释</li>
+<li>类型关系 <code>Typeof</code></li>
+<li>赋值关系 <code>Assign</code></li>
+</ul>
+<p>最终输出是一个按符号名组织的结构化字典，供上层搜索和 prompt 生成使用。</p>
+<h3 id="13-node_promptpy">1.3 <code>node_prompt.py</code></h3>
+<p>这是项目级语义搜索器 <code>CProjectSearcher</code>，主要负责：</p>
+<ul>
+<li>规范化 <code>parse_res</code> 的文件结构。</li>
+<li>判断某个 include 是否是项目内头文件。</li>
+<li>从某个符号出发，沿 <code>include</code> 和 <code>rels</code> 做 DFS。</li>
+<li>把跨文件相关符号按近似拓扑顺序组织起来。</li>
+<li>最终生成适合喂给模型的代码上下文片段。</li>
+</ul>
+<p>可以把它理解为：</p>
+<ul>
+<li><code>cfile_parse.py</code> 负责“抽取知识”</li>
+<li><code>node_prompt.py</code> 负责“组织知识”</li>
+</ul>
+<h3 id="14-generatorpy">1.4 <code>generator.py</code></h3>
+<p>这个模块更偏向离线 RAG prompt 构造，主要服务 <code>rag/main.py</code> 和评测流程。它会：</p>
+<ul>
+<li>读取某个项目的已解析图文件。</li>
+<li>从源码中抽取用户 include 的头文件。</li>
+<li>找到对应头文件里的函数定义信息。</li>
+<li>把这些上下文和原始代码拼接起来。</li>
+<li>使用 <code>tokenizer.py</code> 控制长度，避免超过模型输入上限。</li>
+</ul>
+<h3 id="15-tokenizerpy">1.5 <code>tokenizer.py</code></h3>
+<p>这是模型输入裁剪器，适配了多种代码模型与 GPT 系列，包括：</p>
+<ul>
+<li>CodeGen / CodeGen2.5</li>
+<li>SantaCoder</li>
+<li>StarCoder / StarCoder2</li>
+<li>CodeLlama</li>
+<li>DeepSeek-Coder</li>
+<li>Qwen2.5-Coder / Qwen3</li>
+<li>Llama3</li>
+<li>GPT-3.5 / GPT-4</li>
+</ul>
+<p>核心职责是：</p>
+<ul>
+<li>根据模型配置加载 tokenizer。</li>
+<li>计算 token 长度。</li>
+<li>估算 prompt 可用长度。</li>
+<li>以“prompt + suffix + program”的形式做截断和拼接。</li>
+</ul>
+<p><code>tokenizer copy.py</code> 基本上是旧版本备份，保留了较早的实现，不属于当前主链路。</p>
+<h3 id="16-mainpy">1.6 <code>main.py</code></h3>
+<p>这是一个离线批处理入口，不是 UI agent 的主入口。它面向评测数据集，负责：</p>
+<ul>
+<li>读取数据集 JSONL。</li>
+<li>为每个样本调用 <code>CGenerator.retrieve_prompt()</code>。</li>
+<li>支持超时控制、断点续跑、分批写出。</li>
+</ul>
+<p>更像是“批量生成 prompt 数据”的脚本。</p>
+<h3 id="17">1.7 评测脚本</h3>
+<p><code>rag/</code> 里有多份评测脚本，明显能看出这是一个持续试验中的研究型目录：</p>
+<ul>
+<li><code>eval.py</code>
+  使用 Hugging Face 模型做评测，对比 raw input 与 prompt-enhanced input。</li>
+<li><code>evaluation.py</code>
+  也是 HF 评测脚本，和 <code>eval.py</code> 高度相似，像是较早版本或保留版本。</li>
+<li><code>eval_vllm.py</code>
+  使用 vLLM 做双路评测。</li>
+<li><code>eval_vllm3.py</code>
+  三路评测：<code>raw</code>、<code>model prompt</code>、<code>langchain prompt</code>。</li>
+</ul>
+<p>这些文件都不是在线 agent 的必要依赖，而是用于验证 prompt 增强是否真的提升代码补全效果。</p>
+<h3 id="18">1.8 其他辅助/实验文件</h3>
+<ul>
+<li><code>completion_prompt_agent_origin.py</code>
+  旧版 prompt agent，保留了更早的补全逻辑。</li>
+<li><code>json2neo4j.py</code>
+  把解析结果导入 Neo4j，属于实验型脚本，而且路径和连接信息是硬编码的。</li>
+<li><code>config.yaml</code>
+  模型路径和 token 上限配置文件，里面包含大量本地路径，说明当前实现偏研究/本地实验环境。</li>
+<li><code>utils.py</code>
+  统一放了一批常量，例如数据集目录、结果输出目录、默认模型名、CUDA 可见卡配置等。</li>
+</ul>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav pull-right">
+      <a href="../../readme-en/" class="btn btn-xs btn-default pull-right">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+      <a href="../../readme-en/" class="btn btn-xs btn-link">
+        English README
+      </a>
+    </div>
+    
+    <div class="wm-article-nav">
+      <a href="../main-modules/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../main-modules/" class="btn btn-xs btn-link">
+        主链路模块 (UI与调度)
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+      <p>
+        <a href="https://github.com/CGCL-codes/naturalcc"><i class="fa fa-github"></i>
+GitHub</a>
+      </p>
+  <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>

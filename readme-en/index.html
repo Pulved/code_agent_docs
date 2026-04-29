@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  
+  
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    
+    
+    <link rel="shortcut icon" href="../img/favicon.ico">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>English README - NaturalCC Code Agent</title>
+    <link href="../css/bootstrap-3.3.7.min.css" rel="stylesheet">
+    <link href="../css/font-awesome-4.7.0.css" rel="stylesheet">
+    <link href="../css/base.css" rel="stylesheet">
+    <link rel="stylesheet" href="../css/highlight.css">
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+
+    <script src="../js/jquery-3.2.1.min.js"></script>
+    <script src="../js/bootstrap-3.3.7.min.js"></script>
+    <script src="../js/highlight.pack.js"></script>
+    
+    <base target="_top">
+    <script>
+      var base_url = '..';
+      var is_top_frame = false;
+        
+        var pageToc = [
+          {title: "NaturalCC Code Agent", url: "#_top", children: [
+              {title: "What It Is", url: "#what-it-is" },
+              {title: "Environment Setup", url: "#environment-setup" },
+              {title: "Using The Graphical Interface", url: "#using-the-graphical-interface" },
+              {title: "Using The CLI", url: "#using-the-cli" },
+              {title: "API Endpoints", url: "#api-endpoints" },
+              {title: "Feature Plugin System", url: "#feature-plugin-system" },
+              {title: "Notes And Limitations", url: "#notes-and-limitations" },
+          ]},
+        ];
+
+    </script>
+    <script src="../js/base.js"></script> 
+</head>
+
+<body>
+<script>
+if (is_top_frame) { $('body').addClass('wm-top-page'); }
+</script>
+
+
+
+<div class="container-fluid wm-page-content">
+  <a name="_top"></a>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav">
+      <a href="../modules/rag-engine/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../modules/rag-engine/" class="btn btn-xs btn-link">
+        RAG 底座引擎 (项目理解)
+      </a>
+    </div>
+    
+  </div>
+
+    
+
+    <h1 id="naturalcc-code-agent">NaturalCC Code Agent</h1>
+<p><a href="../">中文文档</a></p>
+<p><code>code_agent</code> is a local code-editing agent that combines static project understanding with Aider-based edits.</p>
+<p>It first parses a project to collect functions, variables, types, members, includes, and symbol relations. It then builds a semantic prompt for the requested task and hands that prompt to Aider, which edits the selected target files.</p>
+<p>The project supports two user-facing paths:</p>
+<ul>
+<li>Graphical UI: FastAPI backend + React/Vite frontend.</li>
+<li>CLI: <code>aider_runner.py</code>.</li>
+</ul>
+<p>The first selected target file is always the primary file used for NaturalCC prompt construction. Aider can still receive and edit multiple target files.</p>
+<h2 id="what-it-is">What It Is</h2>
+<p>This is not a general chat bot. It is a context-enhanced code agent for project-aware code completion and editing.</p>
+<p>Typical tasks:</p>
+<ul>
+<li>complete a function body</li>
+<li>complete a function signature</li>
+<li>complete a variable, member, or type</li>
+<li>make small code changes that should follow existing project style</li>
+<li>preview the exact semantic prompt before running Aider</li>
+</ul>
+<p>Main files:</p>
+<ul>
+<li><code>agent_web_api.py</code>: FastAPI backend and bundled frontend server.</li>
+<li><code>webui/</code>: React + Vite graphical interface.</li>
+<li><code>aider_runner.py</code>: CLI entry and Aider command orchestration.</li>
+<li><code>completion_prompt_agent.py</code>: semantic prompt construction.</li>
+<li><code>rag/c/</code>: C/C++ parsing and context retrieval.</li>
+<li><code>rag/java/</code>: Java parsing and prompt path.</li>
+<li><code>test_api.py</code>: OpenRouter key/connectivity check.</li>
+</ul>
+<h2 id="environment-setup">Environment Setup</h2>
+<h3 id="1-activate-the-python-environment">1. Activate the Python Environment</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>conda<span class="w"> </span>activate<span class="w"> </span>naturalcc
+</code></pre></div>
+<h3 id="2-install-python-requirements">2. Install Python Requirements</h3>
+<p>The project expects these runtime capabilities:</p>
+<ul>
+<li><code>fastapi</code></li>
+<li><code>uvicorn</code></li>
+<li><code>clang</code> Python bindings</li>
+<li><code>libclang</code></li>
+<li><code>aider</code> on <code>PATH</code></li>
+</ul>
+<p>If the active environment is missing pieces, install them according to your local environment policy. A common setup is:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>fastapi<span class="w"> </span>uvicorn<span class="w"> </span>clang<span class="w"> </span>aider-chat
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>libclang
+</code></pre></div>
+<p>For OpenRouter/OpenAI calls, either pass an API key in the UI/CLI or set environment variables:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OPENROUTER_API_KEY</span><span class="o">=</span>sk-or-v1-...
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>sk-...
+</code></pre></div>
+<h3 id="3-install-frontend-dependencies">3. Install Frontend Dependencies</h3>
+<p>From <code>code_agent/</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">cd</span><span class="w"> </span>webui
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>npm<span class="w"> </span>install
+</code></pre></div>
+<h2 id="using-the-graphical-interface">Using The Graphical Interface</h2>
+<p>The UI has a FastAPI backend and a React frontend.</p>
+<h3 id="quick-start-one-click">Quick Start (One-Click)</h3>
+<p>If you have a graphical terminal emulator installed (gnome-terminal, konsole, alacritty, etc.), or <code>tmux</code> as a fallback:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./start.sh
+</code></pre></div>
+<p>This script automatically activates the <code>naturalcc</code> environment and opens two terminal windows (or tmux panes):
+- One for the FastAPI backend
+- One for the Vite frontend dev server</p>
+<p>When using tmux, the session is named <code>ncc-agent</code>. Press <code>Ctrl+B</code> then <code>D</code> to detach; re-attach with <code>tmux attach -t ncc-agent</code>.</p>
+<h3 id="development-mode">Development Mode</h3>
+<p>Use this while editing frontend code. It gives Vite hot reload.</p>
+<p>Terminal 1:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
+</code></pre></div>
+<p>Terminal 2:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>webui
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>npm<span class="w"> </span>run<span class="w"> </span>dev
+</code></pre></div>
+<p>Open:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>http://127.0.0.1:5173/
+</code></pre></div>
+<p>In development mode, Vite serves the frontend on <code>5173</code> and proxies <code>/api/*</code> requests to FastAPI on <code>7860</code>.</p>
+<h3 id="bundled-local-mode">Bundled Local Mode</h3>
+<p>Use this when you want one server to serve both the UI and API.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">cd</span><span class="w"> </span>webui
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>npm<span class="w"> </span>run<span class="w"> </span>build
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nb">cd</span><span class="w"> </span>..
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
+</code></pre></div>
+<p>Open:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>http://127.0.0.1:7860/
+</code></pre></div>
+<p>In bundled mode, FastAPI serves <code>webui/dist</code> and all backend APIs from the same port.</p>
+<h3 id="ui-workflow">UI Workflow</h3>
+<ol>
+<li>Set the project root.</li>
+<li>Select one or more target files.</li>
+<li>Keep the first selected file as the primary parse file.</li>
+<li>Choose or type a model.</li>
+<li>Optionally enter API key, symbol, completion type, or prefix.</li>
+<li>Enter the development instruction.</li>
+<li>Click preview to inspect the final prompt, or execute to run Aider.</li>
+</ol>
+<h2 id="using-the-cli">Using The CLI</h2>
+<p>Run commands from <code>code_agent/</code>.</p>
+<h3 id="preview-prompt-only">Preview Prompt Only</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-dir<span class="w"> </span>/path/to/project<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>-i<span class="w"> </span><span class="s2">&quot;补全 foo 函数实现&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span>--preview
+</code></pre></div>
+<h3 id="execute-aider">Execute Aider</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>-dir<span class="w"> </span>/path/to/project<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>-i<span class="w"> </span><span class="s2">&quot;根据现有风格完善 foo 函数实现&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>-m<span class="w"> </span>openrouter/deepseek/deepseek-chat
+</code></pre></div>
+<h3 id="useful-cli-options">Useful CLI Options</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>-dir<span class="w"> </span>/path/to/project
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>-i<span class="w"> </span><span class="s2">&quot;你的修改或补全需求&quot;</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>-m<span class="w"> </span>openrouter/deepseek/deepseek-chat
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>-key<span class="w"> </span>sk-...
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>-s<span class="w"> </span>parse_flags
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>-t<span class="w"> </span>function_body
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>--prefix<span class="w"> </span>parse_
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>--preview
+</code></pre></div>
+<p><code>-t</code> accepts:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>member
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>variable
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>function
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>function_body
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>type
+</code></pre></div>
+<h2 id="api-endpoints">API Endpoints</h2>
+<p><code>agent_web_api.py</code> exposes:</p>
+<ul>
+<li><code>GET /api/health</code></li>
+<li><code>GET /api/bootstrap</code></li>
+<li><code>GET /api/models</code></li>
+<li><code>GET|POST /api/workspace/scan</code></li>
+<li><code>GET /api/browse</code></li>
+<li><code>POST /api/command-preview</code></li>
+<li><code>POST /api/prompt/preview</code></li>
+<li><code>POST /api/run</code></li>
+</ul>
+<p><code>/api/run</code> streams newline-delimited JSON events so the frontend can display live Aider logs.</p>
+<h2 id="feature-plugin-system">Feature Plugin System</h2>
+<p>The <strong>Advanced</strong> panel is now powered by a plugin architecture. Each feature is a <code>FeaturePlugin</code> under <code>plugins/</code>. The frontend renders forms dynamically from each plugin's <code>config_schema</code>, so adding a new capability does <strong>not</strong> require any frontend code changes.</p>
+<h3 id="architecture">Architecture</h3>
+<ul>
+<li><code>plugins/base.py</code> — <code>FeaturePlugin</code> abstract base class, <code>ExecutionMode</code> (<code>aider</code>/<code>direct</code>/<code>hybrid</code>), <code>ConfigField</code> schema definition, <code>ExecutionContext</code>.</li>
+<li><code>plugins/registry.py</code> — <code>@register_plugin</code> class decorator; plugins auto-register on import.</li>
+<li><code>plugins/dispatcher.py</code> — routes execution to AIDER, DIRECT, or HYBRID mode.</li>
+<li><code>plugins/code_completion.py</code> — the existing <code>symbol</code>/<code>completion_type</code>/<code>prefix</code> logic, migrated to a plugin.</li>
+</ul>
+<h3 id="execution-modes">Execution Modes</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>aider</code></td>
+<td>Generate prompt → call Aider → modify code files</td>
+<td>Code completion</td>
+</tr>
+<tr>
+<td><code>direct</code></td>
+<td>Call external API directly → return report / write files</td>
+<td>Image-to-HTML</td>
+</tr>
+<tr>
+<td><code>hybrid</code></td>
+<td>Analysis via API → generate fix prompt → Aider repair</td>
+<td>Vulnerability detection</td>
+</tr>
+</tbody>
+</table>
+<h3 id="how-to-add-a-new-feature-plugin">How to Add a New Feature Plugin</h3>
+<ol>
+<li>Create a new file under <code>plugins/</code>, e.g. <code>plugins/my_feature.py</code>.</li>
+<li>Inherit <code>FeaturePlugin</code>, implement <code>metadata</code>, <code>config_schema</code>, and <code>execute</code>.</li>
+<li>Decorate the class with <code>@register_plugin</code>.</li>
+<li>Restart the backend. The frontend will automatically show the new feature and render its form.</li>
+</ol>
+<p>Example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># plugins/my_feature.py</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Generator</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">code_agent.plugins.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">FeaturePlugin</span><span class="p">,</span> <span class="n">FeatureMetadata</span><span class="p">,</span> <span class="n">ExecutionMode</span><span class="p">,</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>    <span class="n">ConfigField</span><span class="p">,</span> <span class="n">ConfigFieldType</span><span class="p">,</span> <span class="n">ExecutionContext</span><span class="p">,</span> <span class="n">PluginResult</span><span class="p">,</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="p">)</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">code_agent.plugins.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_plugin</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="nd">@register_plugin</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyFeaturePlugin</span><span class="p">(</span><span class="n">FeaturePlugin</span><span class="p">):</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    <span class="nd">@property</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeatureMetadata</span><span class="p">:</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>        <span class="k">return</span> <span class="n">FeatureMetadata</span><span class="p">(</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_feature&quot;</span><span class="p">,</span>           <span class="c1"># unique ID</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>            <span class="n">label</span><span class="o">=</span><span class="s2">&quot;My Feature&quot;</span><span class="p">,</span>          <span class="c1"># display name</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>            <span class="n">description</span><span class="o">=</span><span class="s2">&quot;What it does&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>            <span class="n">execution_mode</span><span class="o">=</span><span class="n">ExecutionMode</span><span class="o">.</span><span class="n">DIRECT</span><span class="p">,</span>  <span class="c1"># or AIDER / HYBRID</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>        <span class="p">)</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>    <span class="nd">@property</span>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">config_schema</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ConfigField</span><span class="p">]:</span>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>        <span class="k">return</span> <span class="p">[</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>            <span class="n">ConfigField</span><span class="p">(</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>                <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my_param&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>                <span class="n">label</span><span class="o">=</span><span class="s2">&quot;My Parameter&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>                <span class="nb">type</span><span class="o">=</span><span class="n">ConfigFieldType</span><span class="o">.</span><span class="n">TEXT</span><span class="p">,</span>   <span class="c1"># text / textarea / select / switch / file</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>                <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>                <span class="n">placeholder</span><span class="o">=</span><span class="s2">&quot;Enter value&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>                <span class="n">help_text</span><span class="o">=</span><span class="s2">&quot;This is shown under the field&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>            <span class="p">),</span>
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>        <span class="p">]</span>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>
+<a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">ExecutionContext</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<a id="__codelineno-14-37" name="__codelineno-14-37" href="#__codelineno-14-37"></a>        <span class="c1"># yield strings for log output</span>
+<a id="__codelineno-14-38" name="__codelineno-14-38" href="#__codelineno-14-38"></a>        <span class="k">yield</span> <span class="s2">&quot;Starting...</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-14-39" name="__codelineno-14-39" href="#__codelineno-14-39"></a>        <span class="c1"># ... your logic ...</span>
+<a id="__codelineno-14-40" name="__codelineno-14-40" href="#__codelineno-14-40"></a>        <span class="c1"># yield PluginResult when done (for DIRECT / HYBRID)</span>
+<a id="__codelineno-14-41" name="__codelineno-14-41" href="#__codelineno-14-41"></a>        <span class="k">yield</span> <span class="n">PluginResult</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Done!&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="config-field-types">Config Field Types</h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Renders as</th>
+<th>Extra properties</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>text</code></td>
+<td><code>&lt;input type="text"&gt;</code></td>
+<td><code>placeholder</code>, <code>default</code></td>
+</tr>
+<tr>
+<td><code>textarea</code></td>
+<td><code>&lt;textarea&gt;</code></td>
+<td><code>placeholder</code>, <code>default</code></td>
+</tr>
+<tr>
+<td><code>select</code></td>
+<td><code>&lt;select&gt;</code></td>
+<td><code>options: [{value, label}]</code>, <code>default</code></td>
+</tr>
+<tr>
+<td><code>switch</code></td>
+<td><code>&lt;input type="checkbox"&gt;</code></td>
+<td><code>default</code> (bool)</td>
+</tr>
+<tr>
+<td><code>file</code></td>
+<td><code>&lt;input type="file"&gt;</code></td>
+<td><code>accept</code>, <code>multiple</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="file-upload">File Upload</h3>
+<p>If your plugin config contains a <code>file</code> type field, the frontend will automatically send the request as <code>multipart/form-data</code>. Uploaded files are available in <code>context.uploaded_files</code> as <code>{field_name: UploadFile}</code>.</p>
+<h3 id="api-changes-for-plugins">API Changes for Plugins</h3>
+<p><code>/api/bootstrap</code> now returns:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="p">{</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">&quot;features&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;execution_mode&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">}],</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">&quot;schemas&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;feature_name&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="p">,</span><span class="w"> </span><span class="err">...</span><span class="p">}]},</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">  </span><span class="nt">&quot;default_feature&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;code_completion&quot;</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="p">}</span>
+</code></pre></div>
+<p><code>/api/run</code> accepts both JSON (backward compatible) and <code>multipart/form-data</code> (for file uploads). The payload should include:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="p">{</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">&quot;feature&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;my_feature&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">&quot;feature_config&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">&quot;my_param&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;value&quot;</span><span class="p">}</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="p">}</span>
+</code></pre></div>
+<h2 id="notes-and-limitations">Notes And Limitations</h2>
+<ul>
+<li>C/C++ parsing depends on <code>libclang</code>.</li>
+<li>Some C++ syntax may not parse reliably because parts of the parser still use C-oriented libclang settings.</li>
+<li><code>rag/</code> includes offline research/evaluation scripts with local-path assumptions.</li>
+<li>The project currently has smoke checks rather than a formal automated test suite.</li>
+<li><code>test_api.py</code> checks API connectivity; it is not a parser or UI test.</li>
+</ul>
+
+  <br>
+    
+
+    
+    
+      
+    
+
+  <div class="row wm-article-nav-buttons" role="navigation" aria-label="navigation">
+    
+    <div class="wm-article-nav">
+      <a href="../modules/rag-engine/" class="btn btn-xs btn-default pull-left">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Previous</a><a href="../modules/rag-engine/" class="btn btn-xs btn-link">
+        RAG 底座引擎 (项目理解)
+      </a>
+    </div>
+    
+  </div>
+
+    <br>
+</div>
+
+<footer class="container-fluid wm-page-content">
+      <p>
+        <a href="https://github.com/CGCL-codes/naturalcc"><i class="fa fa-github"></i>
+GitHub</a>
+      </p>
+  <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a> using <a href="https://github.com/gristlabs/mkdocs-windmill">Windmill</a> theme by Grist Labs.</p>
+</footer>
+
+</body>
+</html>
