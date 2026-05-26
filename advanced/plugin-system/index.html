@@ -35,9 +35,13 @@
           {title: "Feature Plugin \u7cfb\u7edf", url: "#_top", children: [
               {title: "\u67b6\u6784", url: "#_1" },
               {title: "\u6267\u884c\u6a21\u5f0f", url: "#_2" },
-              {title: "\u5982\u4f55\u6dfb\u52a0\u65b0\u529f\u80fd\u63d2\u4ef6", url: "#_3" },
-              {title: "\u914d\u7f6e\u5b57\u6bb5\u7c7b\u578b", url: "#_4" },
-              {title: "\u6587\u4ef6\u4e0a\u4f20", url: "#_5" },
+              {title: "\u5185\u7f6e\u4ee3\u7801\u603b\u7ed3\u529f\u80fd", url: "#_3" },
+              {title: "NaturalCC / libclang \u7248\u672c\u5bf9\u9f50", url: "#naturalcc-libclang" },
+              {title: "\u5185\u7f6e\u4ee3\u7801\u4fee\u590d\u529f\u80fd", url: "#_4" },
+              {title: "\u5185\u7f6e\u6f0f\u6d1e\u68c0\u6d4b\u529f\u80fd", url: "#_5" },
+              {title: "\u5982\u4f55\u6dfb\u52a0\u65b0\u529f\u80fd\u63d2\u4ef6", url: "#_6" },
+              {title: "\u914d\u7f6e\u5b57\u6bb5\u7c7b\u578b", url: "#_7" },
+              {title: "\u6587\u4ef6\u4e0a\u4f20", url: "#_8" },
               {title: "\u63d2\u4ef6\u76f8\u5173\u7684 API \u53d8\u66f4", url: "#api" },
           ]},
         ];
@@ -94,6 +98,9 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <li><code>plugins/registry.py</code> — <code>@register_plugin</code> 类装饰器；插件在导入时自动注册。</li>
 <li><code>plugins/dispatcher.py</code> — 将执行路由到 AIDER、DIRECT 或 HYBRID 模式。</li>
 <li><code>plugins/code_completion.py</code> — 原有的 <code>symbol</code>/<code>completion_type</code>/<code>prefix</code> 逻辑，已迁移为插件。</li>
+<li><code>plugins/code_summary.py</code> — NaturalCC + Aider dry-run 代码总结。</li>
+<li><code>plugins/code_repair.py</code> — AIDER 模式的代码修复提示词，用于 bug、编译错误和测试失败。</li>
+<li><code>plugins/vulnerability_detection.py</code> — 漏洞分析插件，支持可选的 Aider 自动修复。</li>
 </ul>
 <h3 id="_2">执行模式</h3>
 <table>
@@ -107,13 +114,13 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <tbody>
 <tr>
 <td><code>aider</code></td>
-<td>生成 prompt → 调用 Aider → 修改代码文件</td>
-<td>代码补全</td>
+<td>生成 prompt → 调用 Aider → 修改代码文件或输出 dry-run 报告</td>
+<td>代码补全、代码修复、代码总结</td>
 </tr>
 <tr>
 <td><code>direct</code></td>
-<td>直接调用外部 API → 返回报告 / 写入文件</td>
-<td>图片生成 HTML</td>
+<td>直接分析 → 返回报告 / 写入文件</td>
+<td>静态报告</td>
 </tr>
 <tr>
 <td><code>hybrid</code></td>
@@ -122,7 +129,46 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 </tr>
 </tbody>
 </table>
-<h3 id="_3">如何添加新功能插件</h3>
+<h3 id="_3">内置代码总结功能</h3>
+<p>功能名：<code>code_summary</code>（AIDER 模式）</p>
+<p>执行方式：
+- 对选中的目标文件，或项目下的源码文件，构造正常的 NaturalCC 语义 prompt。
+- 使用 <code>--dry-run</code> 调用 Aider，因此总结过程不会修改文件。
+- 使用所选模型生成更深入的代码理解报告。</p>
+<p>主要配置项：
+- <code>summary_scope</code>：<code>targets</code>（仅目标文件）或 <code>project</code>（全项目源码）
+- <code>detail_level</code>：<code>brief</code> / <code>standard</code> / <code>detailed</code>
+- <code>include_symbols</code>：要求 Aider 包含关键符号和数据流
+- <code>max_files</code>：发送给 NaturalCC 和 Aider 的文件数量上限</p>
+<h3 id="naturalcc-libclang">NaturalCC / libclang 版本对齐</h3>
+<p>NaturalCC 要求 Python <code>clang</code> bindings 与系统安装的 <code>libclang</code> 版本匹配。本项目固定 <code>clang==18.1.8</code>，对应 Ubuntu LLVM 18 / <code>libclang1-18</code> 系列。如果系统使用其他 LLVM 主版本，需要把 <code>clang</code> 依赖和锁文件调整为与 <code>libclang.so</code> 相同的主版本。</p>
+<h3 id="_4">内置代码修复功能</h3>
+<p>功能名：<code>code_repair</code>（AIDER 模式）</p>
+<p>执行方式：
+- 根据用户指令、修复类型、可选错误日志和可选额外上下文生成聚焦修复提示词。
+- 复用现有 NaturalCC 语义 prompt 路径，然后交给 Aider 修改目标文件。
+- 默认偏向最小修复，并尽量保持现有接口不变。</p>
+<p>主要配置项：
+- <code>repair_type</code>：<code>bug_fix</code> / <code>compile_error</code> / <code>test_failure</code> / <code>safe_refactor</code>
+- <code>failure_log</code>：编译错误、测试失败、堆栈或运行时报错
+- <code>extra_context</code>：约束、期望行为或复现说明
+- <code>allow_refactor</code>：必要时允许小范围辅助重构</p>
+<h3 id="_5">内置漏洞检测功能</h3>
+<p>功能名：<code>vulnerability_detection</code>（HYBRID 模式）</p>
+<p>执行方式：
+- 阶段 1：进行基于规则的静态漏洞扫描并生成报告。
+- 阶段 2（可选）：当 <code>auto_fix=true</code> 时，生成修复指令并调用 Aider 对目标文件进行修复。</p>
+<p>主要配置项：
+- <code>scan_scope</code>：<code>targets</code>（仅目标文件）或 <code>project</code>（全项目）
+- <code>severity_threshold</code>：<code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code>
+- <code>rule_profile</code>：<code>default</code> / <code>c_cpp</code> / <code>web</code>
+- <code>auto_fix</code>：是否执行自动修复阶段
+- <code>max_findings</code>：报告中最大告警条数
+- <code>extra_instruction</code>：额外修复约束</p>
+<p>使用建议：
+- 如果要开启 <code>auto_fix</code>，先选择好目标文件。
+- 建议先用 <code>auto_fix=false</code> 查看扫描结果，再决定是否自动修复。</p>
+<h3 id="_6">如何添加新功能插件</h3>
 <ol>
 <li>在 <code>plugins/</code> 下创建新文件，例如 <code>plugins/my_feature.py</code>。</li>
 <li>继承 <code>FeaturePlugin</code>，实现 <code>metadata</code>、<code>config_schema</code> 和 <code>execute</code>。</li>
@@ -172,7 +218,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>        <span class="c1"># 完成后 yield PluginResult（用于 DIRECT / HYBRID 模式）</span>
 <a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        <span class="k">yield</span> <span class="n">PluginResult</span><span class="p">(</span><span class="n">success</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;完成！&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="_4">配置字段类型</h3>
+<h3 id="_7">配置字段类型</h3>
 <table>
 <thead>
 <tr>
@@ -209,7 +255,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 </tr>
 </tbody>
 </table>
-<h3 id="_5">文件上传</h3>
+<h3 id="_8">文件上传</h3>
 <p>如果插件配置包含 <code>file</code> 类型字段，前端会自动以 <code>multipart/form-data</code> 发送请求。上传的文件在 <code>context.uploaded_files</code> 中以 <code>{field_name: UploadFile}</code> 的形式提供。</p>
 <h3 id="api">插件相关的 API 变更</h3>
 <p><code>/api/bootstrap</code> 现在返回：</p>

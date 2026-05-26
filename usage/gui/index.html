@@ -90,14 +90,14 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <p>如果你已安装图形终端模拟器（gnome-terminal、konsole、alacritty 等），或已安装 <code>tmux</code> 作为回退：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./start.sh
 </code></pre></div>
-<p>该脚本会自动激活 <code>naturalcc</code> 环境，并打开两个终端窗口（或 tmux 分屏）：
+<p>该脚本会自动使用 <code>.venv</code> 中的 Python，并打开两个终端窗口（或 tmux 分屏）：
 - 一个运行 FastAPI 后端
 - 一个运行 Vite 前端开发服务器</p>
 <p>使用 tmux 时，session 名称为 <code>ncc-agent</code>。按 <code>Ctrl+B</code> 再按 <code>D</code> 可分离会话；重新 attach 用 <code>tmux attach -t ncc-agent</code>。</p>
 <h3 id="_3">开发模式</h3>
 <p>适合修改前端代码时使用，支持 Vite 热更新。</p>
 <p>终端 1：</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
 </code></pre></div>
 <p>终端 2：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">cd</span><span class="w"> </span>webui
@@ -112,7 +112,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">cd</span><span class="w"> </span>webui
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>npm<span class="w"> </span>run<span class="w"> </span>build
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nb">cd</span><span class="w"> </span>..
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
 </code></pre></div>
 <p>打开：</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>http://127.0.0.1:7860/

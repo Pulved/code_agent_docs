@@ -95,6 +95,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <li>complete a function signature</li>
 <li>complete a variable, member, or type</li>
 <li>make small code changes that should follow existing project style</li>
+<li>detect potential vulnerabilities and optionally auto-fix them</li>
 <li>preview the exact semantic prompt before running Aider</li>
 </ul>
 <p>Main files:</p>
@@ -108,21 +109,32 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <li><code>test_api.py</code>: OpenRouter key/connectivity check.</li>
 </ul>
 <h2 id="environment-setup">Environment Setup</h2>
-<h3 id="1-activate-the-python-environment">1. Activate the Python Environment</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>conda<span class="w"> </span>activate<span class="w"> </span>naturalcc
+<h3 id="prerequisites">Prerequisites</h3>
+<ul>
+<li><a href="https://docs.astral.sh/uv/getting-started/installation/">uv</a> (Python package manager)</li>
+<li>Node.js &amp; npm (for the frontend)</li>
+</ul>
+<h3 id="1-install-system-dependencies">1. Install System Dependencies</h3>
+<p>C/C++ parsing requires the system <code>libclang</code> library. Install it via your OS package manager before running <code>uv sync</code>:</p>
+<ul>
+<li><strong>Ubuntu/Debian</strong>: <code>sudo apt install libclang1</code></li>
+<li><strong>macOS</strong>: <code>brew install libclang</code></li>
+<li><strong>Other</strong>: consult your distribution's package repository for <code>libclang</code></li>
+</ul>
+<h3 id="2-create-the-python-environment">2. Create the Python Environment</h3>
+<p>From <code>code_agent/</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>sync
 </code></pre></div>
-<h3 id="2-install-python-requirements">2. Install Python Requirements</h3>
-<p>The project expects these runtime capabilities:</p>
+<p>This creates a <code>.venv</code> virtual environment and installs all locked Python dependencies. No manual conda or pip steps are needed.</p>
+<p>The project expects these runtime capabilities (all handled by <code>uv sync</code>):</p>
 <ul>
 <li><code>fastapi</code></li>
 <li><code>uvicorn</code></li>
 <li><code>clang</code> Python bindings</li>
-<li><code>libclang</code></li>
 <li><code>aider</code> on <code>PATH</code></li>
 </ul>
-<p>If the active environment is missing pieces, install them according to your local environment policy. A common setup is:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>fastapi<span class="w"> </span>uvicorn<span class="w"> </span>clang<span class="w"> </span>aider-chat
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>libclang
+<p>If you need GPU support (e.g. for vLLM-based offline evaluation), install it manually:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>vllm
 </code></pre></div>
 <p>For OpenRouter/OpenAI calls, either pass an API key in the UI/CLI or set environment variables:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">OPENROUTER_API_KEY</span><span class="o">=</span>sk-or-v1-...
@@ -139,14 +151,14 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <p>If you have a graphical terminal emulator installed (gnome-terminal, konsole, alacritty, etc.), or <code>tmux</code> as a fallback:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./start.sh
 </code></pre></div>
-<p>This script automatically activates the <code>naturalcc</code> environment and opens two terminal windows (or tmux panes):
+<p>This script automatically uses the <code>.venv</code> Python and opens two terminal windows (or tmux panes):
 - One for the FastAPI backend
 - One for the Vite frontend dev server</p>
 <p>When using tmux, the session is named <code>ncc-agent</code>. Press <code>Ctrl+B</code> then <code>D</code> to detach; re-attach with <code>tmux attach -t ncc-agent</code>.</p>
 <h3 id="development-mode">Development Mode</h3>
 <p>Use this while editing frontend code. It gives Vite hot reload.</p>
 <p>Terminal 1:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
 </code></pre></div>
 <p>Terminal 2:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">cd</span><span class="w"> </span>webui
@@ -161,7 +173,7 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">cd</span><span class="w"> </span>webui
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>npm<span class="w"> </span>run<span class="w"> </span>build
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nb">cd</span><span class="w"> </span>..
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>agent_web_api.py<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7860</span>
 </code></pre></div>
 <p>Open:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>http://127.0.0.1:7860/
@@ -180,14 +192,14 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <h2 id="using-the-cli">Using The CLI</h2>
 <p>Run commands from <code>code_agent/</code>.</p>
 <h3 id="preview-prompt-only">Preview Prompt Only</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span>-dir<span class="w"> </span>/path/to/project<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span>-i<span class="w"> </span><span class="s2">&quot;补全 foo 函数实现&quot;</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">  </span>--preview
 </code></pre></div>
 <h3 id="execute-aider">Execute Aider</h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>aider_runner.py<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>-dir<span class="w"> </span>/path/to/project<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>-f<span class="w"> </span>src/foo.c<span class="w"> </span>include/foo.h<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>-i<span class="w"> </span><span class="s2">&quot;根据现有风格完善 foo 函数实现&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -232,6 +244,9 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <li><code>plugins/registry.py</code> — <code>@register_plugin</code> class decorator; plugins auto-register on import.</li>
 <li><code>plugins/dispatcher.py</code> — routes execution to AIDER, DIRECT, or HYBRID mode.</li>
 <li><code>plugins/code_completion.py</code> — the existing <code>symbol</code>/<code>completion_type</code>/<code>prefix</code> logic, migrated to a plugin.</li>
+<li><code>plugins/code_summary.py</code> — NaturalCC + Aider dry-run code summaries.</li>
+<li><code>plugins/code_repair.py</code> — AIDER-mode repair prompts for bug, compile, and test failures.</li>
+<li><code>plugins/vulnerability_detection.py</code> — vulnerability analysis with optional Aider remediation.</li>
 </ul>
 <h3 id="execution-modes">Execution Modes</h3>
 <table>
@@ -245,13 +260,13 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 <tbody>
 <tr>
 <td><code>aider</code></td>
-<td>Generate prompt → call Aider → modify code files</td>
-<td>Code completion</td>
+<td>Generate prompt → call Aider → modify code files or dry-run reports</td>
+<td>Code completion, code repair, code summary</td>
 </tr>
 <tr>
 <td><code>direct</code></td>
-<td>Call external API directly → return report / write files</td>
-<td>Image-to-HTML</td>
+<td>Analyze directly → return report / write files</td>
+<td>Static reports</td>
 </tr>
 <tr>
 <td><code>hybrid</code></td>
@@ -260,6 +275,45 @@ if (is_top_frame) { $('body').addClass('wm-top-page'); }
 </tr>
 </tbody>
 </table>
+<h3 id="built-in-code-summary-feature">Built-in Code Summary Feature</h3>
+<p>Feature name: <code>code_summary</code> (AIDER mode)</p>
+<p>Behavior:
+- Builds the normal NaturalCC semantic prompt for selected target files, or source files under the whole project.
+- Runs Aider with <code>--dry-run</code>, so summary generation does not modify files.
+- Uses the selected model to produce a deeper code-aware report.</p>
+<p>Main config fields:
+- <code>summary_scope</code>: <code>targets</code> or <code>project</code>
+- <code>detail_level</code>: <code>brief</code> / <code>standard</code> / <code>detailed</code>
+- <code>include_symbols</code>: ask Aider to include key symbols and data flow
+- <code>max_files</code>: cap files sent through NaturalCC and Aider</p>
+<h3 id="naturalcc-libclang-version-alignment">NaturalCC / libclang Version Alignment</h3>
+<p>NaturalCC requires the Python <code>clang</code> bindings to match the installed system <code>libclang</code>. This project pins <code>clang==18.1.8</code>, which matches the Ubuntu LLVM 18 / <code>libclang1-18</code> family. If your system uses a different major LLVM version, update the <code>clang</code> dependency and lock file to the same major version as <code>libclang.so</code>.</p>
+<h3 id="built-in-code-repair-feature">Built-in Code Repair Feature</h3>
+<p>Feature name: <code>code_repair</code> (AIDER mode)</p>
+<p>Behavior:
+- Builds a focused repair prompt from the user instruction, repair type, optional failure log, and optional extra context.
+- Uses the existing NaturalCC semantic prompt path, then delegates edits to Aider.
+- Biases toward minimal fixes and preserving existing interfaces.</p>
+<p>Main config fields:
+- <code>repair_type</code>: <code>bug_fix</code> / <code>compile_error</code> / <code>test_failure</code> / <code>safe_refactor</code>
+- <code>failure_log</code>: compiler, test, stack trace, or runtime output
+- <code>extra_context</code>: constraints, expected behavior, or reproduction notes
+- <code>allow_refactor</code>: allow small supporting refactors when needed</p>
+<h3 id="built-in-vulnerability-detection-feature">Built-in Vulnerability Detection Feature</h3>
+<p>Feature name: <code>vulnerability_detection</code> (HYBRID mode)</p>
+<p>Behavior:
+- Phase 1: run static pattern-based vulnerability scan and generate a report.
+- Phase 2 (optional): if <code>auto_fix=true</code>, generate remediation instruction and run Aider on selected target files.</p>
+<p>Main config fields:
+- <code>scan_scope</code>: <code>targets</code> or <code>project</code>
+- <code>severity_threshold</code>: <code>low</code> / <code>medium</code> / <code>high</code> / <code>critical</code>
+- <code>rule_profile</code>: <code>default</code> / <code>c_cpp</code> / <code>web</code>
+- <code>auto_fix</code>: enable/disable repair stage
+- <code>max_findings</code>: cap report size
+- <code>extra_instruction</code>: extra remediation constraints</p>
+<p>Usage tips:
+- Select target files first if you plan to enable <code>auto_fix</code>.
+- Start with <code>auto_fix=false</code> and review findings before enabling automatic remediation.</p>
 <h3 id="how-to-add-a-new-feature-plugin">How to Add a New Feature Plugin</h3>
 <ol>
 <li>Create a new file under <code>plugins/</code>, e.g. <code>plugins/my_feature.py</code>.</li>
