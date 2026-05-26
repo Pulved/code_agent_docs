@@ -10,7 +10,7 @@
 ./start.sh
 ```
 
-该脚本会自动激活 `naturalcc` 环境，并打开两个终端窗口（或 tmux 分屏）：
+该脚本会自动使用 `.venv` 中的 Python，并打开两个终端窗口（或 tmux 分屏）：
 - 一个运行 FastAPI 后端
 - 一个运行 Vite 前端开发服务器
 
@@ -23,7 +23,7 @@
 终端 1：
 
 ```bash
-python agent_web_api.py --host 127.0.0.1 --port 7860
+uv run python agent_web_api.py --host 127.0.0.1 --port 7860
 ```
 
 终端 2：
@@ -49,7 +49,7 @@ http://127.0.0.1:5173/
 cd webui
 npm run build
 cd ..
-python agent_web_api.py --host 127.0.0.1 --port 7860
+uv run python agent_web_api.py --host 127.0.0.1 --port 7860
 ```
 
 打开：

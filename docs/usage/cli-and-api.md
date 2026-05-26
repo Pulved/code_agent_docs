@@ -5,7 +5,7 @@
 ### 仅预览 Prompt
 
 ```bash
-python aider_runner.py \
+uv run python aider_runner.py \
   -dir /path/to/project \
   -f src/foo.c include/foo.h \
   -i "补全 foo 函数实现" \
@@ -15,7 +15,7 @@ python aider_runner.py \
 ### 执行 Aider 修改文件
 
 ```bash
-python aider_runner.py \
+uv run python aider_runner.py \
   -dir /path/to/project \
   -f src/foo.c include/foo.h \
   -i "根据现有风格完善 foo 函数实现" \
